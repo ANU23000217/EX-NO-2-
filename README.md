@@ -37,140 +37,73 @@ STEP-5: Display the obtained cipher text.
 ### Program:
 
 ```
-def prepare_text(text):
-    """ Prepare plaintext by replacing 'j' with 'i' and adding 'x' for repeated or odd characters """
-    text = text.lower().replace("j", "i")
-    prepared = ""
-    
-    i = 0
-    while i < len(text):
-        a = text[i]
-        if i + 1 < len(text):
-            b = text[i + 1]
-            if a == b:
-                prepared += a + "x"
-                i += 1
-            else:
-                prepared += a + b
-                i += 2
-        else:
-            prepared += a + "x"
-            i += 1
+#include <stdio.h>
+#include <string.h>
 
-    if len(prepared) % 2 != 0:
-        prepared += "x"
+#define SIZE 5
 
-    return prepared
+// Predefined 5x5 key matrix
+char key[SIZE][SIZE] = {
+    {'M', 'O', 'N', 'A', 'R'},
+    {'C', 'H', 'Y', 'B', 'D'},
+    {'E', 'F', 'G', 'I', 'K'},
+    {'L', 'P', 'Q', 'S', 'T'},
+    {'U', 'V', 'W', 'X', 'Z'}
+};
 
+// Find the position (row and column) of a character in the key matrix
+void find(char ch, int *r, int *c) {
+    for (int i = 0; i < SIZE * SIZE; i++) {
+        if (key[i / SIZE][i % SIZE] == ch) {
+            *r = i / SIZE;
+            *c = i % SIZE;
+            return;
+        }
+    }
+}
 
-def generate_key_matrix(key):
-    """ Generate the 5x5 key matrix """
-    key = key.lower().replace("j", "i")
-    matrix = []
-    used = set()
+// Playfair cipher encryption/decryption
+void playfair(char *in, char *out, int enc) {
+    int r1, c1, r2, c2;
+    int s = enc ? 1 : -1; // shift direction: +1 for encrypt, -1 for decrypt
 
-    # Fill with key characters
-    for char in key:
-        if char not in used and char.isalpha():
-            used.add(char)
-            matrix.append(char)
+    for (int i = 0; in[i]; i += 2) {
+        find(in[i], &r1, &c1);
+        find(in[i + 1], &r2, &c2);
 
-    # Fill remaining characters
-    for i in range(26):
-        letter = chr(i + ord('a'))
-        if letter != 'j' and letter not in used:
-            matrix.append(letter)
+        if (r1 == r2) {
+            // Same row: shift columns
+            out[i] = key[r1][(c1 + s + SIZE) % SIZE];
+            out[i + 1] = key[r2][(c2 + s + SIZE) % SIZE];
+        }
+        else if (c1 == c2) {
+            // Same column: shift rows
+            out[i] = key[(r1 + s + SIZE) % SIZE][c1];
+            out[i + 1] = key[(r2 + s + SIZE) % SIZE][c2];
+        }
+        else {
+            // Rectangle rule: swap columns
+            out[i] = key[r1][c2];
+            out[i + 1] = key[r2][c1];
+        }
+    }
+    out[strlen(in)] = '\0'; // Null terminate the output string
+}
 
-    # Convert to 5x5 matrix
-    return [matrix[i * 5:(i + 1) * 5] for i in range(5)]
+// Main function
+int main() {
+    char encrypted[100], decrypted[100];
+    char text[] = "Anuradha; 
 
+    playfair(text, encrypted, 1); // Encrypt
+    printf("Encrypted: %s\n", encrypted);
 
-def find_position(matrix, char):
-    """ Find the row and column of a character in the matrix """
-    for row in range(5):
-        for col in range(5):
-            if matrix[row][col] == char:
-                return row, col
-    return None
+    playfair(encrypted, decrypted, 0); // Decrypt
+    printf("Decrypted: %s\n", decrypted);
 
+    return 0;
+}
 
-def encrypt_pair(matrix, a, b):
-    """ Encrypt a pair of characters """
-    row1, col1 = find_position(matrix, a)
-    row2, col2 = find_position(matrix, b)
-
-    if row1 == row2:
-        # Same row: move right
-        return matrix[row1][(col1 + 1) % 5] + matrix[row2][(col2 + 1) % 5]
-    elif col1 == col2:
-        # Same column: move down
-        return matrix[(row1 + 1) % 5][col1] + matrix[(row2 + 1) % 5][col2]
-    else:
-        # Rectangle swap
-        return matrix[row1][col2] + matrix[row2][col1]
-
-
-def decrypt_pair(matrix, a, b):
-    """ Decrypt a pair of characters """
-    row1, col1 = find_position(matrix, a)
-    row2, col2 = find_position(matrix, b)
-
-    if row1 == row2:
-        # Same row: move left
-        return matrix[row1][(col1 - 1) % 5] + matrix[row2][(col2 - 1) % 5]
-    elif col1 == col2:
-        # Same column: move up
-        return matrix[(row1 - 1) % 5][col1] + matrix[(row2 - 1) % 5][col2]
-    else:
-        # Rectangle swap
-        return matrix[row1][col2] + matrix[row2][col1]
-
-
-def playfair_encrypt(matrix, plaintext):
-    """ Encrypt the plaintext using the Playfair cipher """
-    plaintext = prepare_text(plaintext)
-    ciphertext = ""
-
-    for i in range(0, len(plaintext), 2):
-        ciphertext += encrypt_pair(matrix, plaintext[i], plaintext[i + 1])
-
-    return ciphertext
-
-
-def playfair_decrypt(matrix, ciphertext):
-    """ Decrypt the ciphertext using the Playfair cipher """
-    plaintext = ""
-
-    for i in range(0, len(ciphertext), 2):
-        plaintext += decrypt_pair(matrix, ciphertext[i], ciphertext[i + 1])
-
-    return plaintext
-
-
-# Main function to run the Playfair Cipher
-def main():
-    key = input("Enter the key: ").strip()
-    plaintext = input("Enter the plaintext: ").strip()
-
-    # Generate key matrix
-    matrix = generate_key_matrix(key)
-
-    print("\nKey Matrix:")
-    for row in matrix:
-        print(" ".join(row))
-
-    # Encrypt and decrypt
-    ciphertext = playfair_encrypt(matrix, plaintext)
-    decrypted_text = playfair_decrypt(matrix, ciphertext)
-    
-    print("\nPlain Text:", decrypted_text)
-    print("Encrypted Text:", ciphertext)
-    
-
-
-# Run the program
-if __name__ == "__main__":
-    main()
 
 
 ```
