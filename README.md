@@ -93,7 +93,7 @@ void playfair(char *in, char *out, int enc) {
 // Main function
 int main() {
     char encrypted[100], decrypted[100];
-    char text[] = "Anuradha; 
+    char text[] = "School"; 
 
     playfair(text, encrypted, 1); // Encrypt
     printf("Encrypted: %s\n", encrypted);
